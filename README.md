@@ -50,7 +50,7 @@ npm run tui:docker
 ```
 
 ```
-> create abc "Anna Bengtsson" https://example.com/wh hemlig-sträng-minst-16
+> create abc "Anna Bengtsson"
 > list
 > show abc
 > revoke 1
@@ -75,10 +75,10 @@ docker compose down
 
 ```bash
 npm run tui
-> keys list
-> keys create abc "Anna Bengtsson" https://... hemlig
-> keys show abc
-> keys revoke 3
+> list
+> create abc "Anna Bengtsson"
+> show abc
+> revoke 1
 ```
 
 ## Uppgradering och databasschema
