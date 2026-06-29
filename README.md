@@ -25,35 +25,51 @@ npm run dev
 
 ## Testa med Docker
 
+### Starta lokalt
+
 ```bash
-cp .env.example .env   # fyll i ADMIN_TOKEN, SERVICE_TOKEN och DOMAIN
+cp .env.example .env
+# Sätt ADMIN_TOKEN, SERVICE_TOKEN, DOMAIN=localhost
+# Sätt HTTP_PORT=8081, HTTPS_PORT=8443 om port 80/443 är upptagna
 docker compose up -d --build
 ```
 
-Verifiera att servern är uppe:
+Caddy genererar ett självgenererat certifikat för `localhost` — använd `-Lk` med curl (följ redirect, skippa certverifiering).
+
+### 1. Verifiera att servern svarar
 
 ```bash
-curl http://localhost/health
+curl -Lk https://localhost:8443/health
 # {"status":"ok","uptime":...}
 ```
 
-Skapa en testnyckel:
+### 2. Testa via TUI
 
 ```bash
-curl -s -X POST http://localhost/admin/keys \
-  -H "Authorization: Bearer <ADMIN_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"acronym":"abc","name":"Test","webhookUrl":"https://example.com/wh","webhookSecret":"secret-minst-16-tecken"}' \
-  | jq .
+npm run tui:docker
 ```
 
-Stoppa:
+```
+> create abc "Anna Bengtsson" https://example.com/wh hemlig-sträng-minst-16
+> list
+> show abc
+> revoke 1
+> list
+```
+
+### 3. Verifiera att datan överlever omstart
+
+```bash
+docker compose down && docker compose up -d
+npm run tui:docker
+> list   # skall fortfarande visa nyckeln
+```
+
+### Stoppa
 
 ```bash
 docker compose down
 ```
-
-> **Not:** Caddy kräver ett giltigt domännamn för att hämta TLS-certifikat. Lokalt kan du sätta `DOMAIN=localhost` i `.env` — Caddy servar då utan HTTPS på port 80.
 
 ## Admin-TUI
 
