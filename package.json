@@ -12,6 +12,7 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "tui": "tsx tui/index.ts",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "prepare": "husky"
@@ -33,6 +34,7 @@
     "@types/node": "^22.0.0",
     "@types/supertest": "^7.2.0",
     "@types/swagger-ui-express": "^4.1.8",
+    "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.0.0",
     "husky": "^9.1.7",
     "prettier": "^3.0.0",

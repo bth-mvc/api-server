@@ -8,5 +8,11 @@ export default defineConfig({
       ADMIN_TOKEN: 'test-admin-token',
       SERVICE_TOKEN: 'test-service-token',
     },
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts'],
+      reporter: ['text', 'lcov'],
+    },
   },
 })

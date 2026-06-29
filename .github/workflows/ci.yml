@@ -26,3 +26,8 @@ jobs:
         env:
           ADMIN_TOKEN: ci-admin-token
           SERVICE_TOKEN: ci-service-token
+
+      - run: npm run test:coverage
+        env:
+          ADMIN_TOKEN: ci-admin-token
+          SERVICE_TOKEN: ci-service-token
