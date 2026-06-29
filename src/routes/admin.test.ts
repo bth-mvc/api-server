@@ -77,7 +77,9 @@ describe('DELETE + PATCH /admin/keys/:id', () => {
     const revoke = await request(app).delete(`/admin/keys/${id}`).set('Authorization', ADMIN)
     expect(revoke.status).toBe(204)
 
-    const restore = await request(app).patch(`/admin/keys/${id}/restore`).set('Authorization', ADMIN)
+    const restore = await request(app)
+      .patch(`/admin/keys/${id}/restore`)
+      .set('Authorization', ADMIN)
     expect(restore.status).toBe(204)
 
     const full = await request(app).get(`/admin/keys/${id}`).set('Authorization', ADMIN)
