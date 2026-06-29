@@ -30,7 +30,7 @@ npm run dev
 ```bash
 cp .env.example .env
 # Sätt ADMIN_TOKEN, SERVICE_TOKEN, DOMAIN=localhost
-# Sätt HTTP_PORT=8081, HTTPS_PORT=8443 om port 80/443 är upptagna
+# Sätt HTTP_PORT=8080, HTTPS_PORT=8443 om port 80/443 är upptagna
 docker compose up -d --build
 ```
 
@@ -80,6 +80,19 @@ npm run tui
 > keys show abc
 > keys revoke 3
 ```
+
+## Uppgradering och databasschema
+
+Schemat skapas automatiskt vid första start. Om du uppgraderar från en version med ett annat schema (t.ex. om `webhook_url`/`webhook_secret` togs bort) måste databasen återskapas manuellt:
+
+```bash
+# Stoppa servern, ta bort databasen, starta om
+docker compose down
+rm data/keys.db
+docker compose up -d
+```
+
+> **Varning:** All nyckeldata försvinner. Exportera befintliga nycklar via TUI:n innan du tar bort filen.
 
 ## API
 
