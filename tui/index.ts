@@ -11,6 +11,6 @@ new TuiShell(registry, {
 Hanterar API-nycklar för studenter i MVC- och ops-kursen vid BTH.
 
   Server : ${apiUrl}
-  Kommandon: list | create | show | revoke | restore`,
+  Kommandon: health | list | create | show | revoke | restore`,
   defaultGroup: 'keys',
 }).start()

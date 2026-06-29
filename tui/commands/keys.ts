@@ -27,6 +27,7 @@ export class KeysCommands extends BaseCommand {
   }
 
   static descriptions = {
+    health: 'health                                            Check server health',
     list: 'list                                              List all keys',
     create: 'create <acronym> <name> <webhook-url> <secret>   Create a new API key',
     show: 'show <acronym>                                    Show full key details',
@@ -43,6 +44,13 @@ export class KeysCommands extends BaseCommand {
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
+  }
+
+  async health(): Promise<string> {
+    const res = await fetch(`${this.apiUrl}/health`)
+    if (!res.ok) return `Error ${res.status}: ${await res.text()}`
+    const data = (await res.json()) as { status: string; uptime: number }
+    return `Status: ${data.status}  Uptime: ${Math.floor(data.uptime)}s`
   }
 
   async list(): Promise<string> {
