@@ -31,7 +31,5 @@ serviceRouter.post('/verify', (req, res) => {
   res.json({
     valid: true,
     acronym: row.acronym,
-    webhookUrl: row.webhook_url,
-    webhookSecret: row.webhook_secret,
   })
 })

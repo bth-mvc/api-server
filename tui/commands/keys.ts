@@ -5,14 +5,12 @@ interface KeySummary {
   acronym: string
   name: string
   apiKeyHint: string
-  webhookUrl: string
   active: boolean
   createdAt: string
 }
 
 interface KeyFull extends KeySummary {
   apiKey: string
-  webhookSecret: string
 }
 
 export class KeysCommands extends BaseCommand {
@@ -27,12 +25,13 @@ export class KeysCommands extends BaseCommand {
   }
 
   static descriptions = {
-    health: 'health                                            Check server health',
-    list: 'list                                              List all keys',
-    create: 'create <acronym> <name> <webhook-url> <secret>   Create a new API key',
-    show: 'show <acronym>                                    Show full key details',
-    revoke: 'revoke <id>                                       Revoke a key by ID',
-    restore: 'restore <id>                                      Re-activate a revoked key',
+    health: 'health                              Check server health',
+    apidocs: 'apidocs                             Show API docs URL',
+    list: 'list                                List all keys',
+    create: 'create <acronym> <name>             Create a new API key',
+    show: 'show <acronym>                      Show full key details',
+    revoke: 'revoke <id>                         Revoke a key by ID',
+    restore: 'restore <id>                        Re-activate a revoked key',
   }
 
   private async req(method: string, path: string, body?: unknown): Promise<Response> {
@@ -53,6 +52,10 @@ export class KeysCommands extends BaseCommand {
     return `Status: ${data.status}  Uptime: ${Math.floor(data.uptime)}s`
   }
 
+  async apidocs(): Promise<string> {
+    return `API docs: ${this.apiUrl}/api-doc`
+  }
+
   async list(): Promise<string> {
     const res = await this.req('GET', '/admin/keys')
     if (!res.ok) return `Error ${res.status}: ${await res.text()}`
@@ -67,23 +70,21 @@ export class KeysCommands extends BaseCommand {
     return [header, ...lines].join('\n')
   }
 
-  async create(acronym: string, name: string, webhookUrl: string, webhookSecret: string): Promise<string> {
-    if (!acronym || !name || !webhookUrl || !webhookSecret) {
-      return 'Usage: keys create <acronym> <name> <webhook-url> <webhook-secret>'
+  async create(acronym: string, name: string): Promise<string> {
+    if (!acronym || !name) {
+      return 'Usage: keys create <acronym> <name>'
     }
-    const res = await this.req('POST', '/admin/keys', { acronym, name, webhookUrl, webhookSecret })
+    const res = await this.req('POST', '/admin/keys', { acronym, name })
     if (res.status === 409) return `Error: acronym "${acronym}" already exists.`
     if (!res.ok) return `Error ${res.status}: ${await res.text()}`
     const key = (await res.json()) as KeyFull
     return [
       `Key created for ${key.acronym}:`,
-      `  ID:             ${key.id}`,
-      `  Acronym:        ${key.acronym}`,
-      `  Name:           ${key.name}`,
-      `  API Key:        ${key.apiKey}`,
-      `  Webhook URL:    ${key.webhookUrl}`,
-      `  Webhook Secret: ${key.webhookSecret}`,
-      `  Created:        ${key.createdAt}`,
+      `  ID:      ${key.id}`,
+      `  Acronym: ${key.acronym}`,
+      `  Name:    ${key.name}`,
+      `  API Key: ${key.apiKey}`,
+      `  Created: ${key.createdAt}`,
       '',
       '⚠  Copy the API key now — it will not be shown again unless you use "keys show".',
     ].join('\n')
@@ -103,10 +104,8 @@ export class KeysCommands extends BaseCommand {
     const key = (await res.json()) as KeyFull
     return [
       `Key for ${key.acronym}:`,
-      `  API Key:        ${key.apiKey}`,
-      `  Webhook Secret: ${key.webhookSecret}`,
-      `  Webhook URL:    ${key.webhookUrl}`,
-      `  Active:         ${key.active ? 'yes' : 'no'}`,
+      `  API Key: ${key.apiKey}`,
+      `  Active:  ${key.active ? 'yes' : 'no'}`,
     ].join('\n')
   }
 

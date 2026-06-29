@@ -4,7 +4,7 @@ info:
   description: |
     Hanterar API-nycklar för kurser vid BTH. Tre roller:
     - **Admin** (läraren) — skapar, listar och återkallar nycklar
-    - **Student** — hämtar sin nyckel-hint och webhook-URL
+    - **Student** — hämtar sin nyckel-hint
     - **Service** (exchange eller annan server) — verifierar att en nyckel är giltig
   version: '1.0.0'
   contact:
@@ -54,8 +54,6 @@ paths:
             example:
               acronym: abc
               name: Anna Bengtsson Carlsson
-              webhookUrl: https://abc.student.bth.se/api/webhooks/exchange
-              webhookSecret: hemlig-sträng-minst-16-tecken
       responses:
         '201':
           description: Nyckel skapad
@@ -95,7 +93,7 @@ paths:
     get:
       tags: [admin]
       summary: Hämta en nyckel (fullständig)
-      description: Returnerar full API-nyckel och webhook-secret. Används av TUI:n för "keys show".
+      description: Returnerar full API-nyckel. Används av TUI:n för "show".
       security:
         - bearerAuth: []
       parameters:
@@ -160,7 +158,7 @@ paths:
     get:
       tags: [student]
       summary: Hämta nyckelinfo
-      description: Returnerar webhook-URL och en hint om nyckeln. Den fullständiga nyckeln visas aldrig här.
+      description: Returnerar en hint om nyckeln. Den fullständiga nyckeln visas aldrig här.
       parameters:
         - name: acronym
           in: path
@@ -182,9 +180,7 @@ paths:
     post:
       tags: [service]
       summary: Verifiera API-nyckel
-      description: |
-        Exchange-servern (eller annan tjänst) kallar detta för att avgöra om
-        en nyckel är giltig och hämta studentens webhook-konfiguration.
+      description: Exchange-servern kallar detta för att avgöra om en nyckel är giltig.
       security:
         - serviceToken: []
       requestBody:
@@ -236,7 +232,7 @@ components:
 
     CreateKeyRequest:
       type: object
-      required: [acronym, name, webhookUrl, webhookSecret]
+      required: [acronym, name]
       properties:
         acronym:
           type: string
@@ -250,16 +246,6 @@ components:
           maxLength: 100
           description: Studentens fullständiga namn
           example: Anna Bengtsson Carlsson
-        webhookUrl:
-          type: string
-          format: uri
-          description: URL som exchange skickar webhooks till
-          example: https://abc.student.bth.se/api/webhooks/exchange
-        webhookSecret:
-          type: string
-          minLength: 16
-          description: Delad hemlighet för HMAC-signering av webhooks
-          example: hemlig-sträng-minst-16-tecken
 
     KeyFull:
       type: object
@@ -277,12 +263,9 @@ components:
           type: string
           description: Fullständig API-nyckel — visa för studenten direkt, sparas aldrig igen i klartext
           example: mvc_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
-        webhookUrl:
-          type: string
-          example: https://abc.student.bth.se/api/webhooks/exchange
-        webhookSecret:
-          type: string
-          example: hemlig-sträng-minst-16-tecken
+        active:
+          type: boolean
+          example: true
         createdAt:
           type: string
           format: date-time
@@ -304,9 +287,6 @@ components:
           type: string
           description: Visar bara de 8 första tecknen
           example: mvc_a1b2****
-        webhookUrl:
-          type: string
-          example: https://abc.student.bth.se/api/webhooks/exchange
         active:
           type: boolean
           example: true
@@ -327,9 +307,6 @@ components:
         apiKeyHint:
           type: string
           example: mvc_a1b2****
-        webhookUrl:
-          type: string
-          example: https://abc.student.bth.se/api/webhooks/exchange
         active:
           type: boolean
           example: true
@@ -344,14 +321,6 @@ components:
           type: string
           description: Endast present om valid är true
           example: abc
-        webhookUrl:
-          type: string
-          description: Endast present om valid är true
-          example: https://abc.student.bth.se/api/webhooks/exchange
-        webhookSecret:
-          type: string
-          description: Endast present om valid är true
-          example: hemlig-sträng-minst-16-tecken
 
     Error:
       type: object

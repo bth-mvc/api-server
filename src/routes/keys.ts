@@ -18,7 +18,6 @@ keysRouter.get('/:acronym', (req, res) => {
     acronym: row.acronym,
     name: row.name,
     apiKeyHint: `${row.api_key.slice(0, 8)}****`,
-    webhookUrl: row.webhook_url,
     active: true,
   })
 })

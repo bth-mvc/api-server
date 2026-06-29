@@ -12,8 +12,6 @@ adminRouter.use(adminAuth)
 const CreateKeySchema = z.object({
   acronym: z.string().min(2).max(10).toLowerCase(),
   name: z.string().min(1).max(100),
-  webhookUrl: z.string().url(),
-  webhookSecret: z.string().min(16),
 })
 
 adminRouter.post('/keys', (req, res) => {
@@ -22,18 +20,18 @@ adminRouter.post('/keys', (req, res) => {
     res.status(400).json({ error: result.error.issues })
     return
   }
-  const { acronym, name, webhookUrl, webhookSecret } = result.data
+  const { acronym, name } = result.data
   const apiKey = `mvc_${randomBytes(24).toString('hex')}`
 
   let row: KeyRow
   try {
     row = db
       .prepare(
-        `INSERT INTO keys (acronym, name, api_key, webhook_url, webhook_secret)
-         VALUES (?, ?, ?, ?, ?)
+        `INSERT INTO keys (acronym, name, api_key)
+         VALUES (?, ?, ?)
          RETURNING *`,
       )
-      .get(acronym, name, apiKey, webhookUrl, webhookSecret) as KeyRow
+      .get(acronym, name, apiKey) as KeyRow
   } catch (err: unknown) {
     if (err instanceof Error && err.message.includes('UNIQUE constraint failed')) {
       res.status(409).json({ error: `Acronym '${acronym}' already exists` })
@@ -47,8 +45,6 @@ adminRouter.post('/keys', (req, res) => {
     acronym: row.acronym,
     name: row.name,
     apiKey: row.api_key,
-    webhookUrl: row.webhook_url,
-    webhookSecret: row.webhook_secret,
     createdAt: row.created_at,
   })
 })
@@ -61,7 +57,6 @@ adminRouter.get('/keys', (_req, res) => {
       acronym: r.acronym,
       name: r.name,
       apiKeyHint: `${r.api_key.slice(0, 8)}****`,
-      webhookUrl: r.webhook_url,
       active: r.active === 1,
       createdAt: r.created_at,
     })),
@@ -79,8 +74,6 @@ adminRouter.get('/keys/:id', (req, res) => {
     acronym: row.acronym,
     name: row.name,
     apiKey: row.api_key,
-    webhookUrl: row.webhook_url,
-    webhookSecret: row.webhook_secret,
     active: row.active === 1,
     createdAt: row.created_at,
   })

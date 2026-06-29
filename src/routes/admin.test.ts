@@ -11,12 +11,10 @@ beforeEach(() => {
 
 describe('POST /admin/keys', () => {
   it('creates a key and returns it', async () => {
-    const res = await request(app).post('/admin/keys').set('Authorization', ADMIN).send({
-      acronym: 'abc',
-      name: 'Alice',
-      webhookUrl: 'https://abc.example.com/wh',
-      webhookSecret: 'secret-at-least-16-chars',
-    })
+    const res = await request(app)
+      .post('/admin/keys')
+      .set('Authorization', ADMIN)
+      .send({ acronym: 'abc', name: 'Alice' })
     expect(res.status).toBe(201)
     expect(res.body.acronym).toBe('abc')
     expect(res.body.apiKey).toMatch(/^mvc_/)
@@ -36,12 +34,7 @@ describe('POST /admin/keys', () => {
   })
 
   it('returns 409 for duplicate acronym', async () => {
-    const body = {
-      acronym: 'abc',
-      name: 'Alice',
-      webhookUrl: 'https://abc.example.com/wh',
-      webhookSecret: 'secret-at-least-16-chars',
-    }
+    const body = { acronym: 'abc', name: 'Alice' }
     await request(app).post('/admin/keys').set('Authorization', ADMIN).send(body)
     const res = await request(app).post('/admin/keys').set('Authorization', ADMIN).send(body)
     expect(res.status).toBe(409)
@@ -58,16 +51,13 @@ describe('GET /admin/keys', () => {
 
 describe('GET /admin/keys/:id', () => {
   it('returns full key including apiKey', async () => {
-    const created = await request(app).post('/admin/keys').set('Authorization', ADMIN).send({
-      acronym: 'abc',
-      name: 'Alice',
-      webhookUrl: 'https://abc.example.com/wh',
-      webhookSecret: 'secret-at-least-16-chars',
-    })
+    const created = await request(app)
+      .post('/admin/keys')
+      .set('Authorization', ADMIN)
+      .send({ acronym: 'abc', name: 'Alice' })
     const res = await request(app).get(`/admin/keys/${created.body.id}`).set('Authorization', ADMIN)
     expect(res.status).toBe(200)
     expect(res.body.apiKey).toMatch(/^mvc_/)
-    expect(res.body.webhookSecret).toBe('secret-at-least-16-chars')
   })
 
   it('returns 404 for unknown id', async () => {
@@ -78,20 +68,16 @@ describe('GET /admin/keys/:id', () => {
 
 describe('DELETE + PATCH /admin/keys/:id', () => {
   it('revokes and restores a key', async () => {
-    const created = await request(app).post('/admin/keys').set('Authorization', ADMIN).send({
-      acronym: 'abc',
-      name: 'Alice',
-      webhookUrl: 'https://abc.example.com/wh',
-      webhookSecret: 'secret-at-least-16-chars',
-    })
+    const created = await request(app)
+      .post('/admin/keys')
+      .set('Authorization', ADMIN)
+      .send({ acronym: 'abc', name: 'Alice' })
     const { id } = created.body
 
     const revoke = await request(app).delete(`/admin/keys/${id}`).set('Authorization', ADMIN)
     expect(revoke.status).toBe(204)
 
-    const restore = await request(app)
-      .patch(`/admin/keys/${id}/restore`)
-      .set('Authorization', ADMIN)
+    const restore = await request(app).patch(`/admin/keys/${id}/restore`).set('Authorization', ADMIN)
     expect(restore.status).toBe(204)
 
     const full = await request(app).get(`/admin/keys/${id}`).set('Authorization', ADMIN)
@@ -106,12 +92,10 @@ describe('DELETE + PATCH /admin/keys/:id', () => {
 
 describe('GET /keys/:acronym', () => {
   it('returns hint after key created', async () => {
-    await request(app).post('/admin/keys').set('Authorization', ADMIN).send({
-      acronym: 'xyz',
-      name: 'Bob',
-      webhookUrl: 'https://xyz.example.com/wh',
-      webhookSecret: 'secret-at-least-16-chars',
-    })
+    await request(app)
+      .post('/admin/keys')
+      .set('Authorization', ADMIN)
+      .send({ acronym: 'xyz', name: 'Bob' })
 
     const res = await request(app).get('/keys/xyz')
     expect(res.status).toBe(200)

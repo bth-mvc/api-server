@@ -8,10 +8,11 @@ const SERVICE = process.env.SERVICE_TOKEN ?? 'test-service-token'
 
 function createKey(acronym: string) {
   const apiKey = `mvc_${randomBytes(24).toString('hex')}`
-  db.prepare(
-    `INSERT INTO keys (acronym, name, api_key, webhook_url, webhook_secret)
-     VALUES (?, ?, ?, ?, ?)`,
-  ).run(acronym, 'Test User', apiKey, 'https://example.com/wh', 'secret-at-least-16-chars')
+  db.prepare(`INSERT INTO keys (acronym, name, api_key) VALUES (?, ?, ?)`).run(
+    acronym,
+    'Test User',
+    apiKey,
+  )
   return apiKey
 }
 
@@ -29,8 +30,6 @@ describe('POST /service/verify', () => {
     expect(res.status).toBe(200)
     expect(res.body.valid).toBe(true)
     expect(res.body.acronym).toBe('abc')
-    expect(res.body.webhookUrl).toBe('https://example.com/wh')
-    expect(res.body.webhookSecret).toBe('secret-at-least-16-chars')
   })
 
   it('returns valid false for unknown key', async () => {
