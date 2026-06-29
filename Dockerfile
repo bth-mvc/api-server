@@ -5,6 +5,7 @@ COPY package*.json ./
 RUN npm ci
 COPY tsconfig*.json ./
 COPY src/ ./src/
+COPY openapi.yaml ./dist/openapi.yaml
 RUN npm run build && npm prune --omit=dev
 
 FROM node:24-slim
@@ -13,4 +14,4 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 RUN mkdir -p /app/data
 EXPOSE 5000
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]
