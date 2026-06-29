@@ -22,6 +22,38 @@ npm run dev
 | `npm run tui` | Starta admin-TUI |
 | `npm run build` | Kompilera TypeScript |
 
+## Testa med Docker
+
+```bash
+cp .env.example .env   # fyll i ADMIN_TOKEN, SERVICE_TOKEN och DOMAIN
+docker compose up -d --build
+```
+
+Verifiera att servern är uppe:
+
+```bash
+curl http://localhost/health
+# {"status":"ok","uptime":...}
+```
+
+Skapa en testnyckel:
+
+```bash
+curl -s -X POST http://localhost/admin/keys \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"acronym":"abc","name":"Test","webhookUrl":"https://example.com/wh","webhookSecret":"secret-minst-16-tecken"}' \
+  | jq .
+```
+
+Stoppa:
+
+```bash
+docker compose down
+```
+
+> **Not:** Caddy kräver ett giltigt domännamn för att hämta TLS-certifikat. Lokalt kan du sätta `DOMAIN=localhost` i `.env` — Caddy servar då utan HTTPS på port 80.
+
 ## Admin-TUI
 
 ```bash
