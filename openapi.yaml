@@ -92,10 +92,34 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   /admin/keys/{id}:
+    get:
+      tags: [admin]
+      summary: Hämta en nyckel (fullständig)
+      description: Returnerar full API-nyckel och webhook-secret. Används av TUI:n för "keys show".
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Fullständig nyckelinfo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyFull'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
     delete:
       tags: [admin]
       summary: Återkalla nyckel
-      description: Sätter nyckeln som inaktiv. Kan återaktiveras via TUI.
+      description: Sätter nyckeln som inaktiv. Kan återaktiveras med PATCH /:id/restore.
       security:
         - bearerAuth: []
       parameters:
@@ -107,6 +131,26 @@ paths:
       responses:
         '204':
           description: Nyckel återkallad
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/keys/{id}/restore:
+    patch:
+      tags: [admin]
+      summary: Återaktivera nyckel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Nyckel återaktiverad
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':

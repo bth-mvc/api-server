@@ -1,96 +1,120 @@
 import { BaseCommand } from '@dbwebb/tui'
-import { randomBytes } from 'node:crypto'
-import { db } from '../../src/db.js'
-import type { KeyRow } from '../../src/db.js'
+
+interface KeySummary {
+  id: number
+  acronym: string
+  name: string
+  apiKeyHint: string
+  webhookUrl: string
+  active: boolean
+  createdAt: string
+}
+
+interface KeyFull extends KeySummary {
+  apiKey: string
+  webhookSecret: string
+}
 
 export class KeysCommands extends BaseCommand {
+  private readonly apiUrl: string
+  private readonly token: string
+
+  constructor() {
+    super()
+    this.apiUrl = (process.env.API_URL ?? 'http://localhost:5000').replace(/\/$/, '')
+    this.token = process.env.ADMIN_TOKEN ?? ''
+    if (!this.token) console.warn('Warning: ADMIN_TOKEN is not set.')
+  }
+
   static descriptions = {
     list: 'list                                              List all keys',
     create: 'create <acronym> <name> <webhook-url> <secret>   Create a new API key',
-    show: 'show <acronym>                                    Show full API key (sensitive)',
+    show: 'show <acronym>                                    Show full key details',
     revoke: 'revoke <id>                                       Revoke a key by ID',
     restore: 'restore <id>                                      Re-activate a revoked key',
   }
 
-  async list(): Promise<string> {
-    const rows = db.prepare('SELECT * FROM keys ORDER BY created_at DESC').all() as KeyRow[]
-    if (rows.length === 0) return 'No keys found.'
-
-    const lines = rows.map((r) => {
-      const status = r.active ? '✓' : '✗'
-      const hint = `${r.api_key.slice(0, 8)}****`
-      return `  [${r.id}] ${status}  ${r.acronym.padEnd(12)} ${r.name.padEnd(30)} ${hint}`
+  private async req(method: string, path: string, body?: unknown): Promise<Response> {
+    return fetch(`${this.apiUrl}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.token}`,
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     })
-    return [`ID  St  Acronym       Name                           Key hint`, ...lines].join('\n')
+  }
+
+  async list(): Promise<string> {
+    const res = await this.req('GET', '/admin/keys')
+    if (!res.ok) return `Error ${res.status}: ${await res.text()}`
+    const keys = (await res.json()) as KeySummary[]
+    if (keys.length === 0) return 'No keys found.'
+
+    const header = 'ID  St  Acronym       Name                           Key hint'
+    const lines = keys.map((k) => {
+      const status = k.active ? '✓' : '✗'
+      return `  [${k.id}] ${status}  ${k.acronym.padEnd(12)} ${k.name.padEnd(30)} ${k.apiKeyHint}`
+    })
+    return [header, ...lines].join('\n')
   }
 
   async create(acronym: string, name: string, webhookUrl: string, webhookSecret: string): Promise<string> {
     if (!acronym || !name || !webhookUrl || !webhookSecret) {
       return 'Usage: keys create <acronym> <name> <webhook-url> <webhook-secret>'
     }
-    if (webhookSecret.length < 16) {
-      return 'Error: webhook-secret must be at least 16 characters.'
-    }
-
-    const apiKey = `mvc_${randomBytes(24).toString('hex')}`
-
-    try {
-      const row = db
-        .prepare(
-          `INSERT INTO keys (acronym, name, api_key, webhook_url, webhook_secret)
-           VALUES (?, ?, ?, ?, ?)
-           RETURNING *`,
-        )
-        .get(acronym.toLowerCase(), name, apiKey, webhookUrl, webhookSecret) as KeyRow
-
-      return [
-        `Key created for ${row.acronym}:`,
-        `  ID:             ${row.id}`,
-        `  Acronym:        ${row.acronym}`,
-        `  Name:           ${row.name}`,
-        `  API Key:        ${row.api_key}`,
-        `  Webhook URL:    ${row.webhook_url}`,
-        `  Webhook Secret: ${row.webhook_secret}`,
-        `  Created:        ${row.created_at}`,
-        '',
-        '⚠  Copy the API key now — it will only show in full via "keys show <acronym>".',
-      ].join('\n')
-    } catch {
-      return `Error: acronym "${acronym}" already exists. Use "keys list" to see existing keys.`
-    }
+    const res = await this.req('POST', '/admin/keys', { acronym, name, webhookUrl, webhookSecret })
+    if (res.status === 409) return `Error: acronym "${acronym}" already exists.`
+    if (!res.ok) return `Error ${res.status}: ${await res.text()}`
+    const key = (await res.json()) as KeyFull
+    return [
+      `Key created for ${key.acronym}:`,
+      `  ID:             ${key.id}`,
+      `  Acronym:        ${key.acronym}`,
+      `  Name:           ${key.name}`,
+      `  API Key:        ${key.apiKey}`,
+      `  Webhook URL:    ${key.webhookUrl}`,
+      `  Webhook Secret: ${key.webhookSecret}`,
+      `  Created:        ${key.createdAt}`,
+      '',
+      '⚠  Copy the API key now — it will not be shown again unless you use "keys show".',
+    ].join('\n')
   }
 
   async show(acronym: string): Promise<string> {
     if (!acronym) return 'Usage: keys show <acronym>'
 
-    const row = db
-      .prepare('SELECT * FROM keys WHERE acronym = ?')
-      .get(acronym.toLowerCase()) as KeyRow | undefined
+    const listRes = await this.req('GET', '/admin/keys')
+    if (!listRes.ok) return `Error ${listRes.status}: ${await listRes.text()}`
+    const keys = (await listRes.json()) as KeySummary[]
+    const found = keys.find((k) => k.acronym === acronym.toLowerCase())
+    if (!found) return `No key found for acronym "${acronym}".`
 
-    if (!row) return `No key found for acronym "${acronym}".`
-
+    const res = await this.req('GET', `/admin/keys/${found.id}`)
+    if (!res.ok) return `Error ${res.status}: ${await res.text()}`
+    const key = (await res.json()) as KeyFull
     return [
-      `Key for ${row.acronym}:`,
-      `  API Key:        ${row.api_key}`,
-      `  Webhook Secret: ${row.webhook_secret}`,
-      `  Webhook URL:    ${row.webhook_url}`,
-      `  Active:         ${row.active ? 'yes' : 'no'}`,
+      `Key for ${key.acronym}:`,
+      `  API Key:        ${key.apiKey}`,
+      `  Webhook Secret: ${key.webhookSecret}`,
+      `  Webhook URL:    ${key.webhookUrl}`,
+      `  Active:         ${key.active ? 'yes' : 'no'}`,
     ].join('\n')
   }
 
   async revoke(id: string): Promise<string> {
     if (!id) return 'Usage: keys revoke <id>'
-
-    const { changes } = db.prepare('UPDATE keys SET active = 0 WHERE id = ?').run(id)
-    if (changes === 0) return `No key with ID ${id}.`
+    const res = await this.req('DELETE', `/admin/keys/${id}`)
+    if (res.status === 404) return `No key with ID ${id}.`
+    if (!res.ok) return `Error ${res.status}: ${await res.text()}`
     return `Key ${id} revoked.`
   }
 
   async restore(id: string): Promise<string> {
     if (!id) return 'Usage: keys restore <id>'
-
-    const { changes } = db.prepare('UPDATE keys SET active = 1 WHERE id = ?').run(id)
-    if (changes === 0) return `No key with ID ${id}.`
+    const res = await this.req('PATCH', `/admin/keys/${id}/restore`)
+    if (res.status === 404) return `No key with ID ${id}.`
+    if (!res.ok) return `Error ${res.status}: ${await res.text()}`
     return `Key ${id} restored.`
   }
 }

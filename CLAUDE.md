@@ -27,8 +27,10 @@ Student-endpoint är öppen men begränsad via studentens akronym.
 | Method | Path | Auth | Beskrivning |
 |---|---|---|---|
 | `POST /admin/keys` | Admin | Skapa nyckel för en student |
-| `GET /admin/keys` | Admin | Lista alla nycklar |
+| `GET /admin/keys` | Admin | Lista alla nycklar (nyckel dold) |
+| `GET /admin/keys/:id` | Admin | Hämta en nyckel med full API-nyckel |
 | `DELETE /admin/keys/:id` | Admin | Återkalla en nyckel |
+| `PATCH /admin/keys/:id/restore` | Admin | Återaktivera en återkallad nyckel |
 | `GET /keys/:acronym` | Öppen | Student hämtar sin nyckel (visar aldrig full nyckel) |
 | `POST /service/verify` | Service | Exchange verifierar att en nyckel är giltig |
 | `GET /health` | Öppen | Hälsostatus |

@@ -56,6 +56,54 @@ describe('GET /admin/keys', () => {
   })
 })
 
+describe('GET /admin/keys/:id', () => {
+  it('returns full key including apiKey', async () => {
+    const created = await request(app).post('/admin/keys').set('Authorization', ADMIN).send({
+      acronym: 'abc',
+      name: 'Alice',
+      webhookUrl: 'https://abc.example.com/wh',
+      webhookSecret: 'secret-at-least-16-chars',
+    })
+    const res = await request(app).get(`/admin/keys/${created.body.id}`).set('Authorization', ADMIN)
+    expect(res.status).toBe(200)
+    expect(res.body.apiKey).toMatch(/^mvc_/)
+    expect(res.body.webhookSecret).toBe('secret-at-least-16-chars')
+  })
+
+  it('returns 404 for unknown id', async () => {
+    const res = await request(app).get('/admin/keys/999').set('Authorization', ADMIN)
+    expect(res.status).toBe(404)
+  })
+})
+
+describe('DELETE + PATCH /admin/keys/:id', () => {
+  it('revokes and restores a key', async () => {
+    const created = await request(app).post('/admin/keys').set('Authorization', ADMIN).send({
+      acronym: 'abc',
+      name: 'Alice',
+      webhookUrl: 'https://abc.example.com/wh',
+      webhookSecret: 'secret-at-least-16-chars',
+    })
+    const { id } = created.body
+
+    const revoke = await request(app).delete(`/admin/keys/${id}`).set('Authorization', ADMIN)
+    expect(revoke.status).toBe(204)
+
+    const restore = await request(app)
+      .patch(`/admin/keys/${id}/restore`)
+      .set('Authorization', ADMIN)
+    expect(restore.status).toBe(204)
+
+    const full = await request(app).get(`/admin/keys/${id}`).set('Authorization', ADMIN)
+    expect(full.body.active).toBe(true)
+  })
+
+  it('returns 404 when revoking unknown id', async () => {
+    const res = await request(app).delete('/admin/keys/999').set('Authorization', ADMIN)
+    expect(res.status).toBe(404)
+  })
+})
+
 describe('GET /keys/:acronym', () => {
   it('returns hint after key created', async () => {
     await request(app).post('/admin/keys').set('Authorization', ADMIN).send({

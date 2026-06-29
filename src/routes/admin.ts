@@ -68,9 +68,35 @@ adminRouter.get('/keys', (_req, res) => {
   )
 })
 
+adminRouter.get('/keys/:id', (req, res) => {
+  const row = db.prepare(`SELECT * FROM keys WHERE id = ?`).get(req.params.id) as KeyRow | undefined
+  if (!row) {
+    res.status(404).json({ error: 'Key not found' })
+    return
+  }
+  res.json({
+    id: row.id,
+    acronym: row.acronym,
+    name: row.name,
+    apiKey: row.api_key,
+    webhookUrl: row.webhook_url,
+    webhookSecret: row.webhook_secret,
+    active: row.active === 1,
+    createdAt: row.created_at,
+  })
+})
+
 adminRouter.delete('/keys/:id', (req, res) => {
   const { changes } = db.prepare(`UPDATE keys SET active = 0 WHERE id = ?`).run(req.params.id)
+  if (changes === 0) {
+    res.status(404).json({ error: 'Key not found' })
+    return
+  }
+  res.status(204).end()
+})
 
+adminRouter.patch('/keys/:id/restore', (req, res) => {
+  const { changes } = db.prepare(`UPDATE keys SET active = 1 WHERE id = ?`).run(req.params.id)
   if (changes === 0) {
     res.status(404).json({ error: 'Key not found' })
     return
