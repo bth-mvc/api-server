@@ -25,13 +25,22 @@ adminRouter.post('/keys', (req, res) => {
   const { acronym, name, webhookUrl, webhookSecret } = result.data
   const apiKey = `mvc_${randomBytes(24).toString('hex')}`
 
-  const row = db
-    .prepare(
-      `INSERT INTO keys (acronym, name, api_key, webhook_url, webhook_secret)
-       VALUES (?, ?, ?, ?, ?)
-       RETURNING *`,
-    )
-    .get(acronym, name, apiKey, webhookUrl, webhookSecret) as KeyRow
+  let row: KeyRow
+  try {
+    row = db
+      .prepare(
+        `INSERT INTO keys (acronym, name, api_key, webhook_url, webhook_secret)
+         VALUES (?, ?, ?, ?, ?)
+         RETURNING *`,
+      )
+      .get(acronym, name, apiKey, webhookUrl, webhookSecret) as KeyRow
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes('UNIQUE constraint failed')) {
+      res.status(409).json({ error: `Acronym '${acronym}' already exists` })
+      return
+    }
+    throw err
+  }
 
   res.status(201).json({
     id: row.id,

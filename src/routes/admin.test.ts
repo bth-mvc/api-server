@@ -34,6 +34,18 @@ describe('POST /admin/keys', () => {
       .send({ acronym: 'abc' })
     expect(res.status).toBe(400)
   })
+
+  it('returns 409 for duplicate acronym', async () => {
+    const body = {
+      acronym: 'abc',
+      name: 'Alice',
+      webhookUrl: 'https://abc.example.com/wh',
+      webhookSecret: 'secret-at-least-16-chars',
+    }
+    await request(app).post('/admin/keys').set('Authorization', ADMIN).send(body)
+    const res = await request(app).post('/admin/keys').set('Authorization', ADMIN).send(body)
+    expect(res.status).toBe(409)
+  })
 })
 
 describe('GET /admin/keys', () => {
