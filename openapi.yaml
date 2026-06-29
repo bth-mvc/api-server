@@ -1,0 +1,346 @@
+openapi: '3.1.0'
+info:
+  title: BTH API-nyckelserver
+  description: |
+    Hanterar API-nycklar för kurser vid BTH. Tre roller:
+    - **Admin** (läraren) — skapar, listar och återkallar nycklar
+    - **Student** — hämtar sin nyckel-hint och webhook-URL
+    - **Service** (exchange eller annan server) — verifierar att en nyckel är giltig
+  version: '1.0.0'
+  contact:
+    name: Mikael Roos
+    email: mikael.t.h.roos@gmail.com
+
+servers:
+  - url: http://localhost:5000
+    description: Lokal dev
+
+tags:
+  - name: health
+    description: Hälsostatus
+  - name: admin
+    description: Lärarens administration (kräver Bearer-token)
+  - name: student
+    description: Studentens vy (öppen)
+  - name: service
+    description: Maskin-till-maskin (kräver X-Service-Token)
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Hälsostatus
+      responses:
+        '200':
+          description: Servern är uppe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+  /admin/keys:
+    post:
+      tags: [admin]
+      summary: Skapa API-nyckel
+      description: Skapar en ny nyckel för en student. Returnerar den fullständiga nyckeln — visa den för studenten direkt.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKeyRequest'
+            example:
+              acronym: abc
+              name: Anna Bengtsson Carlsson
+              webhookUrl: https://abc.student.bth.se/api/webhooks/exchange
+              webhookSecret: hemlig-sträng-minst-16-tecken
+      responses:
+        '201':
+          description: Nyckel skapad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyFull'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Akronym redan registrerad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [admin]
+      summary: Lista alla nycklar
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista med alla nycklar (nyckeln dold)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KeySummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/keys/{id}:
+    delete:
+      tags: [admin]
+      summary: Återkalla nyckel
+      description: Sätter nyckeln som inaktiv. Kan återaktiveras via TUI.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Nyckel återkallad
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /keys/{acronym}:
+    get:
+      tags: [student]
+      summary: Hämta nyckelinfo
+      description: Returnerar webhook-URL och en hint om nyckeln. Den fullständiga nyckeln visas aldrig här.
+      parameters:
+        - name: acronym
+          in: path
+          required: true
+          schema:
+            type: string
+          example: abc
+      responses:
+        '200':
+          description: Nyckelinfo (nyckeln dold)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyHint'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /service/verify:
+    post:
+      tags: [service]
+      summary: Verifiera API-nyckel
+      description: |
+        Exchange-servern (eller annan tjänst) kallar detta för att avgöra om
+        en nyckel är giltig och hämta studentens webhook-konfiguration.
+      security:
+        - serviceToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apiKey]
+              properties:
+                apiKey:
+                  type: string
+                  example: mvc_a1b2c3d4e5f6...
+      responses:
+        '200':
+          description: Verifieringsresultat (valid true eller false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: 'ADMIN_TOKEN från .env — `Authorization: Bearer <token>`'
+    serviceToken:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: 'SERVICE_TOKEN från .env'
+
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        uptime:
+          type: number
+          description: Sekunder sedan servern startade
+          example: 42.3
+
+    CreateKeyRequest:
+      type: object
+      required: [acronym, name, webhookUrl, webhookSecret]
+      properties:
+        acronym:
+          type: string
+          minLength: 2
+          maxLength: 10
+          description: Studentens akronym (gemener, lowercase-normaliseras)
+          example: abc
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Studentens fullständiga namn
+          example: Anna Bengtsson Carlsson
+        webhookUrl:
+          type: string
+          format: uri
+          description: URL som exchange skickar webhooks till
+          example: https://abc.student.bth.se/api/webhooks/exchange
+        webhookSecret:
+          type: string
+          minLength: 16
+          description: Delad hemlighet för HMAC-signering av webhooks
+          example: hemlig-sträng-minst-16-tecken
+
+    KeyFull:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        acronym:
+          type: string
+          example: abc
+        name:
+          type: string
+          example: Anna Bengtsson Carlsson
+        apiKey:
+          type: string
+          description: Fullständig API-nyckel — visa för studenten direkt, sparas aldrig igen i klartext
+          example: mvc_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
+        webhookUrl:
+          type: string
+          example: https://abc.student.bth.se/api/webhooks/exchange
+        webhookSecret:
+          type: string
+          example: hemlig-sträng-minst-16-tecken
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-06-29T10:00:00.000Z'
+
+    KeySummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        acronym:
+          type: string
+          example: abc
+        name:
+          type: string
+          example: Anna Bengtsson Carlsson
+        apiKeyHint:
+          type: string
+          description: Visar bara de 8 första tecknen
+          example: mvc_a1b2****
+        webhookUrl:
+          type: string
+          example: https://abc.student.bth.se/api/webhooks/exchange
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-06-29T10:00:00.000Z'
+
+    KeyHint:
+      type: object
+      properties:
+        acronym:
+          type: string
+          example: abc
+        name:
+          type: string
+          example: Anna Bengtsson Carlsson
+        apiKeyHint:
+          type: string
+          example: mvc_a1b2****
+        webhookUrl:
+          type: string
+          example: https://abc.student.bth.se/api/webhooks/exchange
+        active:
+          type: boolean
+          example: true
+
+    VerifyResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+        acronym:
+          type: string
+          description: Endast present om valid är true
+          example: abc
+        webhookUrl:
+          type: string
+          description: Endast present om valid är true
+          example: https://abc.student.bth.se/api/webhooks/exchange
+        webhookSecret:
+          type: string
+          description: Endast present om valid är true
+          example: hemlig-sträng-minst-16-tecken
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Key not found
+
+  responses:
+    Unauthorized:
+      description: Saknad eller felaktig autentisering
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+    NotFound:
+      description: Resursen hittades inte
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Key not found
+    ValidationError:
+      description: Ogiltig request body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: array
+                items:
+                  type: object
