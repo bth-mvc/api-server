@@ -20,6 +20,7 @@ npm run dev
 | `npm run check` | Typecheck + lint + format + test |
 | `npm test` | Kör tester |
 | `npm run tui` | Starta admin-TUI |
+| `npm run test:coverage` | Kör tester med kodtäckning |
 | `npm run build` | Kompilera TypeScript |
 
 ## Testa med Docker
