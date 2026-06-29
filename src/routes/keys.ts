@@ -4,7 +4,7 @@ import type { KeyRow } from '../db.js'
 
 export const keysRouter = Router()
 
-keysRouter.get('/keys/:acronym', (req, res) => {
+keysRouter.get('/:acronym', (req, res) => {
   const row = db
     .prepare(`SELECT * FROM keys WHERE acronym = ? AND active = 1`)
     .get(req.params.acronym.toLowerCase()) as KeyRow | undefined

@@ -10,9 +10,9 @@ export const app = express()
 app.use(express.json())
 
 app.use(healthRouter)
-app.use(adminRouter)
-app.use(keysRouter)
-app.use(serviceRouter)
+app.use('/admin', adminRouter)
+app.use('/keys', keysRouter)
+app.use('/service', serviceRouter)
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' })

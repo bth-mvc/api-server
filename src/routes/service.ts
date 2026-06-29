@@ -12,7 +12,7 @@ const VerifySchema = z.object({
   apiKey: z.string().min(1),
 })
 
-serviceRouter.post('/service/verify', (req, res) => {
+serviceRouter.post('/verify', (req, res) => {
   const result = VerifySchema.safeParse(req.body)
   if (!result.success) {
     res.status(400).json({ error: result.error.issues })

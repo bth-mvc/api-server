@@ -16,7 +16,7 @@ const CreateKeySchema = z.object({
   webhookSecret: z.string().min(16),
 })
 
-adminRouter.post('/admin/keys', (req, res) => {
+adminRouter.post('/keys', (req, res) => {
   const result = CreateKeySchema.safeParse(req.body)
   if (!result.success) {
     res.status(400).json({ error: result.error.issues })
@@ -44,7 +44,7 @@ adminRouter.post('/admin/keys', (req, res) => {
   })
 })
 
-adminRouter.get('/admin/keys', (_req, res) => {
+adminRouter.get('/keys', (_req, res) => {
   const rows = db.prepare(`SELECT * FROM keys ORDER BY created_at DESC`).all() as KeyRow[]
   res.json(
     rows.map((r) => ({
@@ -59,10 +59,8 @@ adminRouter.get('/admin/keys', (_req, res) => {
   )
 })
 
-adminRouter.delete('/admin/keys/:id', (req, res) => {
-  const { changes } = db
-    .prepare(`UPDATE keys SET active = 0 WHERE id = ?`)
-    .run(req.params.id)
+adminRouter.delete('/keys/:id', (req, res) => {
+  const { changes } = db.prepare(`UPDATE keys SET active = 0 WHERE id = ?`).run(req.params.id)
 
   if (changes === 0) {
     res.status(404).json({ error: 'Key not found' })
