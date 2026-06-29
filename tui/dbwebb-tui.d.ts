@@ -9,8 +9,13 @@ declare module '@dbwebb/tui' {
     dispatch(tokens: string[]): Promise<{ ok: boolean; message: string }>
   }
 
+  export interface TuiShellOptions {
+    welcomeMessage?: string
+    defaultGroup?: string
+  }
+
   export class TuiShell {
-    constructor(registry: CommandRegistry)
+    constructor(registry: CommandRegistry, options?: TuiShellOptions)
     start(): void
   }
 }
