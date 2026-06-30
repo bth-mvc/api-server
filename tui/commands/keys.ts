@@ -73,7 +73,8 @@ export class KeysCommands extends BaseCommand {
     return [header, ...lines].join('\n')
   }
 
-  async create(acronym: string, name: string): Promise<string> {
+  async create(acronym: string, ...nameParts: string[]): Promise<string> {
+    const name = nameParts.join(' ').replace(/^"|"$/g, '').trim()
     if (!acronym || !name) {
       return 'Usage: keys create <acronym> <name>'
     }
