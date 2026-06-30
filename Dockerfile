@@ -6,7 +6,7 @@ RUN npm ci
 COPY tsconfig*.json ./
 COPY src/ ./src/
 COPY openapi.yaml ./dist/openapi.yaml
-RUN npm run build && npm prune --omit=dev
+RUN npm run build && cp package.json dist/package.json && npm prune --omit=dev
 
 FROM node:24-slim
 WORKDIR /app
