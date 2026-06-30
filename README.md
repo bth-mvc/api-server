@@ -116,6 +116,12 @@ docker compose down
 
 ## Admin-TUI
 
+| Kommando | Miljö |
+|---|---|
+| `npm run tui` | Lokal dev-server (`npm run dev`) |
+| `npm run tui:docker` | Lokal Docker med `Caddyfile.local` |
+| `npm run tui:prod` | Produktionsserver |
+
 ```bash
 npm run tui
 > list
