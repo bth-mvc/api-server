@@ -112,16 +112,30 @@ CD-pipelinen SSH:ar in på servern och kör `git pull && docker compose -f docke
 
 ### Skapa SSH-nyckelpar för deploy
 
-Kör lokalt (eller på servern):
+GitHub Actions behöver kunna SSH:a in på servern. Det kräver ett nyckelpar där den **privata** nyckeln läggs i GitHub Secrets och den **publika** nyckeln läggs i `authorized_keys` på servern.
+
+Generera nyckelparet på servern:
 
 ```bash
 ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/deploy_key -N ""
 ```
 
-Lägg till **publika** nyckeln på servern:
+Lägg till den publika nyckeln i `authorized_keys` så servern accepterar inloggning med den:
 
 ```bash
 cat ~/.ssh/deploy_key.pub >> /root/.ssh/authorized_keys
+```
+
+Visa den privata nyckeln — kopiera hela utskriften inklusive `-----BEGIN`- och `-----END`-raderna:
+
+```bash
+cat ~/.ssh/deploy_key
+```
+
+Nyckelfilerna kan raderas när GitHub Secrets är satta:
+
+```bash
+rm ~/.ssh/deploy_key ~/.ssh/deploy_key.pub
 ```
 
 ### Lägg till GitHub Secrets
@@ -130,7 +144,7 @@ I repot: **Settings → Secrets and variables → Actions → New repository sec
 
 | Secret | Värde |
 |---|---|
-| `SSH_HOST` | Dropletens IP-adress |
+| `SSH_HOST` | Dropletens IP-adress eller domännamn |
 | `SSH_USER` | `root` (eller din deploy-användare) |
 | `SSH_PRIVATE_KEY` | Innehållet i `~/.ssh/deploy_key` (privata nyckeln) |
 
