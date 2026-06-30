@@ -125,11 +125,21 @@ api-server/
 │       ├── adminAuth.ts      ← Bearer token
 │       ├── serviceAuth.ts    ← X-Service-Token
 │       └── errorHandler.ts
+├── tui/
+│   ├── index.ts              ← TUI-startpunkt
+│   └── commands/keys.ts      ← admin-kommandon
+├── scripts/
+│   └── droplet-setup.sh      ← DigitalOcean startup script
 ├── data/                     ← SQLite-fil (gitignorerad, Docker-volym)
 │   └── keys.db
 ├── Dockerfile
-├── docker-compose.yml
+├── docker-compose.yml        ← lokal dev med Caddy (tls internal)
+├── docker-compose.prod.yml   ← produktion utan Caddy (host-Caddy hanterar TLS)
+├── Caddyfile                 ← produktion (Let's Encrypt)
+├── Caddyfile.local           ← lokal testning (tls internal)
 ├── .env.example
+├── .env.prod.example
+├── openapi.yaml
 ├── package.json
 └── CLAUDE.md
 ```
@@ -160,18 +170,17 @@ CREATE TABLE keys (
 
 ## Driftsättning
 
-Designad för att köras som en Docker-container med en monterad volym för SQLite-filen:
+Tre miljöer:
 
-```yaml
-services:
-  api-server:
-    build: .
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./data:/app/data   # SQLite-filen överlever omstarter
-    env_file: .env
-```
+| Kommando | Miljö |
+|---|---|
+| `npm run dev` | Lokal dev-server |
+| `docker compose up -d` | Lokal Docker med `Caddyfile.local` (`tls internal`) |
+| `docker compose -f docker-compose.prod.yml up -d` | Produktion |
+
+I produktion installeras Caddy direkt på host-nivå och hanterar TLS (Let's Encrypt) och routing. `docker-compose.prod.yml` innehåller bara `api-server`-containern som lyssnar på `127.0.0.1:5000`. Se `DEPLOY.md` för fullständiga instruktioner.
+
+Produktionsserver: `https://apikeys.dbwebb.se` (Digital Ocean, Ubuntu 24.04)
 
 ## Relation till andra repon
 
