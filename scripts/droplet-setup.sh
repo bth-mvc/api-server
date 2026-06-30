@@ -2,6 +2,7 @@
 # DigitalOcean startup script — körs en gång som root vid första boot.
 # Loggas till /var/log/droplet-setup.log
 set -e
+export DEBIAN_FRONTEND=noninteractive
 exec > /var/log/droplet-setup.log 2>&1
 
 echo "=== $(date) Startar droplet-setup ==="
