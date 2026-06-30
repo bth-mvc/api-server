@@ -25,22 +25,34 @@ npm run dev
 
 ## Testa med Docker
 
+Caddyfilen använder `tls internal` vilket gör att Caddy utfärdar ett lokalt certifikat via sin egen CA — samma uppsättning som produktion men utan Let's Encrypt.
+
 ### Starta lokalt
 
 ```bash
 cp .env.example .env
 # Sätt ADMIN_TOKEN, SERVICE_TOKEN, DOMAIN=localhost
-# Sätt HTTP_PORT=8080, HTTPS_PORT=8443 om port 80/443 är upptagna
+# Sätt HTTP_PORT=8081, HTTPS_PORT=8443 om port 80/443 är upptagna
 docker compose up -d --build
 ```
 
-Caddy genererar ett självgenererat certifikat för `localhost` — använd `-Lk` med curl (följ redirect, skippa certverifiering).
+### Lita på Caddys lokala CA (görs en gång per maskin)
+
+```bash
+docker compose exec caddy caddy trust
+```
+
+Därefter fungerar HTTPS utan `-k`:
+
+```bash
+curl -L https://localhost/health
+# {"status":"ok","uptime":...}
+```
 
 ### 1. Verifiera att servern svarar
 
 ```bash
-curl -Lk https://localhost:8443/health
-# {"status":"ok","uptime":...}
+curl -L https://localhost/health
 ```
 
 ### 2. Testa via TUI
@@ -50,6 +62,7 @@ npm run tui:docker
 ```
 
 ```
+> health
 > create abc "Anna Bengtsson"
 > list
 > show abc
