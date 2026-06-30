@@ -122,6 +122,8 @@ docker compose down
 | `npm run tui:docker` | Lokal Docker med `Caddyfile.local` |
 | `npm run tui:prod` | Produktionsserver |
 
+Distinktionen mellan `tui:docker` och `tui:prod` handlar om certifikat, inte port. `tui:docker` stänger av TLS-verifieringen eftersom `Caddyfile.local` använder Caddys egna CA. `tui:prod` litar på Let's Encrypt som Node.js känner till direkt. Kör du Docker lokalt på port 80/443 skall du ändå använda `tui:docker`.
+
 ```bash
 npm run tui
 > list
