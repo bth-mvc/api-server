@@ -50,8 +50,8 @@ export class KeysCommands extends BaseCommand {
   async health(): Promise<string> {
     const res = await fetch(`${this.apiUrl}/health`)
     if (!res.ok) return `Error ${res.status}: ${await res.text()}`
-    const data = (await res.json()) as { status: string; uptime: number }
-    return `Status: ${data.status}  Uptime: ${Math.floor(data.uptime)}s`
+    const data = (await res.json()) as { status: string; version: string; uptime: number }
+    return `Status: ${data.status}  Version: ${data.version}  Uptime: ${Math.floor(data.uptime)}s`
   }
 
   async apidocs(): Promise<string> {
