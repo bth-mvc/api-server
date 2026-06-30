@@ -21,29 +21,22 @@ På DigitalOcean:
 
 ---
 
-## 2. Serversetup (kör en gång via SSH)
+## 2. Serversetup
+
+### Startup script (klistras in vid droplet-skapande)
+
+Under **Advanced Options → User Data** på DigitalOcean, klistra in innehållet från [`scripts/droplet-setup.sh`](scripts/droplet-setup.sh). Scriptet installerar Docker och Caddy, konfigurerar brandväggen och skapar `/opt/api-server` automatiskt vid första boot.
+
+Följ förloppet efter att du loggat in:
+
+```bash
+tail -f /var/log/droplet-setup.log
+```
+
+### Manuella steg (kör via SSH efter att scriptet är klart)
 
 ```bash
 ssh root@<IP>
-```
-
-### Docker
-
-```bash
-curl -fsSL https://get.docker.com | sh
-```
-
-### Caddy (host-nivå)
-
-Caddy installeras direkt på servern och hanterar TLS och routing för alla tjänster och webbplatser på dropleten.
-
-```bash
-apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
-  | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
-  | tee /etc/apt/sources.list.d/caddy-stable.list
-apt update && apt install caddy
 ```
 
 ### Konfigurera Caddy
