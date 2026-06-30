@@ -6,6 +6,7 @@ interface KeySummary {
   name: string
   apiKeyHint: string
   active: boolean
+  expiresAt: string
   createdAt: string
 }
 
@@ -32,6 +33,7 @@ export class KeysCommands extends BaseCommand {
     show: 'show <acronym>                      Show full key details',
     revoke: 'revoke <id>                         Revoke a key by ID',
     restore: 'restore <id>                        Re-activate a revoked key',
+    ttl: 'ttl <id> <date>                     Set expiry date (e.g. 2027-06-30)',
   }
 
   private async req(method: string, path: string, body?: unknown): Promise<Response> {
@@ -62,10 +64,11 @@ export class KeysCommands extends BaseCommand {
     const keys = (await res.json()) as KeySummary[]
     if (keys.length === 0) return 'No keys found.'
 
-    const header = 'ID  St  Acronym       Name                           Key hint'
+    const header = 'ID  St  Acronym       Name                           Expires'
     const lines = keys.map((k) => {
       const status = k.active ? '✓' : '✗'
-      return `  [${k.id}] ${status}  ${k.acronym.padEnd(12)} ${k.name.padEnd(30)} ${k.apiKeyHint}`
+      const expires = k.expiresAt.slice(0, 10)
+      return `  [${k.id}] ${status}  ${k.acronym.padEnd(12)} ${k.name.padEnd(30)} ${expires}`
     })
     return [header, ...lines].join('\n')
   }
@@ -84,9 +87,10 @@ export class KeysCommands extends BaseCommand {
       `  Acronym: ${key.acronym}`,
       `  Name:    ${key.name}`,
       `  API Key: ${key.apiKey}`,
+      `  Expires: ${key.expiresAt.slice(0, 10)}`,
       `  Created: ${key.createdAt}`,
       '',
-      '⚠  Copy the API key now — it will not be shown again unless you use "keys show".',
+      '⚠  Copy the API key now — it will not be shown again unless you use "show".',
     ].join('\n')
   }
 
@@ -106,6 +110,7 @@ export class KeysCommands extends BaseCommand {
       `Key for ${key.acronym}:`,
       `  API Key: ${key.apiKey}`,
       `  Active:  ${key.active ? 'yes' : 'no'}`,
+      `  Expires: ${key.expiresAt.slice(0, 10)}`,
     ].join('\n')
   }
 
@@ -123,5 +128,16 @@ export class KeysCommands extends BaseCommand {
     if (res.status === 404) return `No key with ID ${id}.`
     if (!res.ok) return `Error ${res.status}: ${await res.text()}`
     return `Key ${id} restored.`
+  }
+
+  async ttl(id: string, date: string): Promise<string> {
+    if (!id || !date) return 'Usage: keys ttl <id> <date>  (e.g. ttl 1 2027-06-30)'
+    const expiresAt = new Date(date).toISOString()
+    if (isNaN(new Date(date).getTime())) return `Invalid date: "${date}"`
+    const res = await this.req('PATCH', `/admin/keys/${id}/ttl`, { expiresAt })
+    if (res.status === 404) return `No key with ID ${id}.`
+    if (res.status === 400) return `Invalid date format. Use ISO 8601 (e.g. 2027-06-30).`
+    if (!res.ok) return `Error ${res.status}: ${await res.text()}`
+    return `Key ${id} expires at ${date}.`
   }
 }

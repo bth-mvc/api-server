@@ -20,7 +20,7 @@ serviceRouter.post('/verify', (req, res) => {
   }
 
   const row = db
-    .prepare(`SELECT * FROM keys WHERE api_key = ? AND active = 1`)
+    .prepare(`SELECT * FROM keys WHERE api_key = ? AND active = 1 AND expires_at > datetime('now')`)
     .get(result.data.apiKey) as KeyRow | undefined
 
   if (!row) {

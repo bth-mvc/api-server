@@ -14,6 +14,10 @@ const CreateKeySchema = z.object({
   name: z.string().min(1).max(100),
 })
 
+const SetTtlSchema = z.object({
+  expiresAt: z.string().datetime({ offset: true }),
+})
+
 adminRouter.post('/keys', (req, res) => {
   const result = CreateKeySchema.safeParse(req.body)
   if (!result.success) {
@@ -45,6 +49,7 @@ adminRouter.post('/keys', (req, res) => {
     acronym: row.acronym,
     name: row.name,
     apiKey: row.api_key,
+    expiresAt: row.expires_at,
     createdAt: row.created_at,
   })
 })
@@ -58,6 +63,7 @@ adminRouter.get('/keys', (_req, res) => {
       name: r.name,
       apiKeyHint: `${r.api_key.slice(0, 8)}****`,
       active: r.active === 1,
+      expiresAt: r.expires_at,
       createdAt: r.created_at,
     })),
   )
@@ -75,6 +81,7 @@ adminRouter.get('/keys/:id', (req, res) => {
     name: row.name,
     apiKey: row.api_key,
     active: row.active === 1,
+    expiresAt: row.expires_at,
     createdAt: row.created_at,
   })
 })
@@ -90,6 +97,22 @@ adminRouter.delete('/keys/:id', (req, res) => {
 
 adminRouter.patch('/keys/:id/restore', (req, res) => {
   const { changes } = db.prepare(`UPDATE keys SET active = 1 WHERE id = ?`).run(req.params.id)
+  if (changes === 0) {
+    res.status(404).json({ error: 'Key not found' })
+    return
+  }
+  res.status(204).end()
+})
+
+adminRouter.patch('/keys/:id/ttl', (req, res) => {
+  const result = SetTtlSchema.safeParse(req.body)
+  if (!result.success) {
+    res.status(400).json({ error: result.error.issues })
+    return
+  }
+  const { changes } = db
+    .prepare(`UPDATE keys SET expires_at = ? WHERE id = ?`)
+    .run(result.data.expiresAt, req.params.id)
   if (changes === 0) {
     res.status(404).json({ error: 'Key not found' })
     return

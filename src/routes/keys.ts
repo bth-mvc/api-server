@@ -19,5 +19,6 @@ keysRouter.get('/:acronym', (req, res) => {
     name: row.name,
     apiKeyHint: `${row.api_key.slice(0, 8)}****`,
     active: true,
+    expiresAt: row.expires_at,
   })
 })

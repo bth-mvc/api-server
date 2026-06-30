@@ -134,6 +134,41 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /admin/keys/{id}/ttl:
+    patch:
+      tags: [admin]
+      summary: Ändra utgångsdatum
+      description: Sätter ett nytt utgångsdatum för nyckeln. Utgångna nycklar returnerar `valid false` vid verifiering.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expiresAt]
+              properties:
+                expiresAt:
+                  type: string
+                  format: date-time
+                  example: '2027-06-30T00:00:00.000Z'
+      responses:
+        '204':
+          description: Utgångsdatum uppdaterat
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /admin/keys/{id}/restore:
     patch:
       tags: [admin]
@@ -266,6 +301,10 @@ components:
         active:
           type: boolean
           example: true
+        expiresAt:
+          type: string
+          format: date-time
+          example: '2027-06-30T00:00:00.000Z'
         createdAt:
           type: string
           format: date-time
@@ -290,6 +329,10 @@ components:
         active:
           type: boolean
           example: true
+        expiresAt:
+          type: string
+          format: date-time
+          example: '2027-06-30T00:00:00.000Z'
         createdAt:
           type: string
           format: date-time
@@ -310,6 +353,10 @@ components:
         active:
           type: boolean
           example: true
+        expiresAt:
+          type: string
+          format: date-time
+          example: '2027-06-30T00:00:00.000Z'
 
     VerifyResponse:
       type: object
