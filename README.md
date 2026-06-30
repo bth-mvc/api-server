@@ -32,14 +32,18 @@ npm run dev
 ```bash
 cp .env.example .env
 # Sätt ADMIN_TOKEN, SERVICE_TOKEN, DOMAIN=localhost, CADDYFILE=Caddyfile.local
-# Sätt HTTP_PORT=8081, HTTPS_PORT=8443 om port 80/443 är upptagna
+# Sätt HTTP_PORT=8080, HTTPS_PORT=8443 om port 80/443 är upptagna
 docker compose up -d --build
 ```
 
 ### Lita på Caddys lokala CA (görs en gång per maskin)
 
+`caddy trust` inuti containern kan inte nå värddatorns CA-store — extrahera certifikatet manuellt istället:
+
 ```bash
-docker compose exec caddy caddy trust
+docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt \
+  | sudo tee /usr/local/share/ca-certificates/caddy-local-ca.crt
+sudo update-ca-certificates
 ```
 
 Därefter fungerar HTTPS utan `-k`:
@@ -48,6 +52,32 @@ Därefter fungerar HTTPS utan `-k`:
 curl -L https://localhost/health
 # {"status":"ok","uptime":...}
 ```
+
+<details>
+<summary>Platform-specifika instruktioner (Linux, WSL, macOS)</summary>
+
+**Linux (Ubuntu/Debian)**
+
+```bash
+docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt \
+  | sudo tee /usr/local/share/ca-certificates/caddy-local-ca.crt
+sudo update-ca-certificates
+```
+
+**WSL (Windows Subsystem for Linux)**
+
+Samma som Linux för `curl` i WSL-terminalen. Vill du även lita på certifikatet i Windows-webbläsare behöver du importera det i Windows certifikathanterare (MMC → Trusted Root Certification Authorities).
+
+**macOS**
+
+```bash
+docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt \
+  > /tmp/caddy-local-ca.crt
+sudo security add-trusted-cert -d -r trustRoot \
+  -k /Library/Keychains/System.keychain /tmp/caddy-local-ca.crt
+```
+
+</details>
 
 ### 1. Verifiera att servern svarar
 
