@@ -31,6 +31,7 @@ Student-endpoint är öppen men begränsad via studentens akronym.
 | `GET /admin/keys/:id` | Admin | Hämta en nyckel med full API-nyckel |
 | `DELETE /admin/keys/:id` | Admin | Återkalla en nyckel |
 | `PATCH /admin/keys/:id/restore` | Admin | Återaktivera en återkallad nyckel |
+| `PATCH /admin/keys/:id/ttl` | Admin | Sätt utgångsdatum för en nyckel |
 | `GET /keys/:acronym` | Öppen | Student hämtar sin nyckel (visar aldrig full nyckel) |
 | `POST /service/verify` | Service | Exchange verifierar att en nyckel är giltig |
 | `GET /health` | Öppen | Hälsostatus |
@@ -39,9 +40,7 @@ Student-endpoint är öppen men begränsad via studentens akronym.
 ```json
 {
   "acronym": "abc",
-  "name": "Anna Bengtsson Carlsson",
-  "webhookUrl": "https://abc.student.bth.se/api/webhooks/exchange",
-  "webhookSecret": "hemlig-sträng-per-student"
+  "name": "Anna Bengtsson Carlsson"
 }
 ```
 
@@ -52,9 +51,15 @@ Student-endpoint är öppen men begränsad via studentens akronym.
   "acronym": "abc",
   "name": "Anna Bengtsson Carlsson",
   "apiKey": "mvc_a1b2c3d4e5f6...",
-  "webhookUrl": "https://abc.student.bth.se/api/webhooks/exchange",
-  "webhookSecret": "hemlig-sträng-per-student",
-  "createdAt": "2026-06-29T10:00:00.000Z"
+  "expiresAt": "2027-06-30T00:00:00.000Z",
+  "createdAt": "2026-06-30T10:00:00.000Z"
+}
+```
+
+### `PATCH /admin/keys/:id/ttl` — request
+```json
+{
+  "expiresAt": "2027-06-30T00:00:00.000Z"
 }
 ```
 
@@ -64,8 +69,8 @@ Student-endpoint är öppen men begränsad via studentens akronym.
   "acronym": "abc",
   "name": "Anna Bengtsson Carlsson",
   "apiKeyHint": "mvc_a1b2****",
-  "webhookUrl": "https://abc.student.bth.se/api/webhooks/exchange",
-  "active": true
+  "active": true,
+  "expiresAt": "2027-06-30T00:00:00.000Z"
 }
 ```
 
@@ -80,9 +85,7 @@ Student-endpoint är öppen men begränsad via studentens akronym.
 ```json
 {
   "valid": true,
-  "acronym": "abc",
-  "webhookUrl": "https://abc.student.bth.se/api/webhooks/exchange",
-  "webhookSecret": "hemlig-sträng-per-student"
+  "acronym": "abc"
 }
 ```
 
@@ -145,14 +148,13 @@ api-server/
 
 ```sql
 CREATE TABLE keys (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  acronym     TEXT UNIQUE NOT NULL,
-  name        TEXT NOT NULL,
-  api_key     TEXT UNIQUE NOT NULL,
-  webhook_url TEXT NOT NULL,
-  webhook_secret TEXT NOT NULL,
-  active      INTEGER NOT NULL DEFAULT 1,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  acronym    TEXT UNIQUE NOT NULL,
+  name       TEXT NOT NULL,
+  api_key    TEXT UNIQUE NOT NULL,
+  active     INTEGER NOT NULL DEFAULT 1,
+  expires_at TEXT NOT NULL DEFAULT (datetime('now', '+1 year')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 
