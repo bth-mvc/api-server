@@ -1,6 +1,6 @@
 {
   "name": "api-server",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Minimal API key server for BTH courses",
   "type": "module",
   "scripts": {
