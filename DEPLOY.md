@@ -1,6 +1,6 @@
 # Driftsättning
 
-API-servern körs som en Docker-container bakom Caddy (auto-TLS via Let's Encrypt) på en DigitalOcean-droplet. Ny kod deployas automatiskt när du pushar en `v*`-tagg till GitHub.
+API-servern körs som en Docker-container bakom Caddy (auto-TLS via Let's Encrypt) på en DigitalOcean-droplet. Caddy installeras på host-nivå och hanterar TLS och routing för alla tjänster på dropleten. Ny kod deployas automatiskt när du pushar en `v*`-tagg till GitHub.
 
 ## Förutsättningar
 
@@ -31,6 +31,35 @@ ssh root@<IP>
 
 ```bash
 curl -fsSL https://get.docker.com | sh
+```
+
+### Caddy (host-nivå)
+
+Caddy installeras direkt på servern och hanterar TLS och routing för alla tjänster och webbplatser på dropleten.
+
+```bash
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+  | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+  | tee /etc/apt/sources.list.d/caddy-stable.list
+apt update && apt install caddy
+```
+
+### Konfigurera Caddy
+
+Lägg till ett site-block för api-servern i `/etc/caddy/Caddyfile`:
+
+```
+api.example.com {
+    reverse_proxy localhost:5000
+}
+```
+
+Starta om Caddy — certifikat hämtas automatiskt från Let's Encrypt:
+
+```bash
+systemctl reload caddy
 ```
 
 ### Brandvägg
@@ -64,7 +93,6 @@ Fyll i:
 ```
 ADMIN_TOKEN=<lång-slumpmässig-sträng>
 SERVICE_TOKEN=<annan-lång-slumpmässig-sträng>
-DOMAIN=api.example.com
 NODE_ENV=production
 ```
 
@@ -73,10 +101,10 @@ Generera tokens med: `openssl rand -hex 32`
 ### Starta tjänsten
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-Caddy hämtar automatiskt ett TLS-certifikat från Let's Encrypt vid första uppstarten. Kontrollera att det fungerar:
+Verifiera att det fungerar:
 
 ```bash
 curl https://api.example.com/health
@@ -87,7 +115,7 @@ curl https://api.example.com/health
 
 ## 3. Konfigurera CD (GitHub Actions)
 
-CD-pipelinen SSH:ar in på servern och kör `git pull && docker compose up -d --build` vid ny tagg.
+CD-pipelinen SSH:ar in på servern och kör `git pull && docker compose -f docker-compose.prod.yml up -d --build` vid ny tagg.
 
 ### Skapa SSH-nyckelpar för deploy
 
@@ -118,8 +146,7 @@ I repot: **Settings → Secrets and variables → Actions → New repository sec
 ## 4. Deploya en ny version
 
 ```bash
-git tag v1.0.0
-git push --tags
+npm run release:patch   # eller :minor / :major
 ```
 
 GitHub Actions kör då `.github/workflows/deploy.yml` som SSH:ar in och startar om containrarna med den nya koden. Följ förloppet under **Actions**-fliken i GitHub.
@@ -130,19 +157,19 @@ GitHub Actions kör då `.github/workflows/deploy.yml` som SSH:ar in och startar
 
 ```bash
 # Visa körande containrar
-docker compose ps
+docker compose -f docker-compose.prod.yml ps
 
 # Visa loggar (följ)
-docker compose logs -f
+docker compose -f docker-compose.prod.yml logs -f
 
 # Starta om
-docker compose restart
+docker compose -f docker-compose.prod.yml restart
 
 # Uppdatera manuellt (utan CD)
-git pull && docker compose up -d --build
+git pull && docker compose -f docker-compose.prod.yml up -d --build
 
 # Stoppa allt
-docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
 ## Säkerhetskopia av databasen
