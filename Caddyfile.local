@@ -1,3 +1,4 @@
 {$DOMAIN} {
+    tls internal
     reverse_proxy api-server:5000
 }

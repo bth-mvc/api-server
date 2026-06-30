@@ -25,13 +25,13 @@ npm run dev
 
 ## Testa med Docker
 
-Caddyfilen använder `tls internal` vilket gör att Caddy utfärdar ett lokalt certifikat via sin egen CA — samma uppsättning som produktion men utan Let's Encrypt.
+`Caddyfile.local` använder `tls internal` — Caddy utfärdar ett lokalt certifikat via sin egen CA, vilket speglar produktionsuppsättningen utan Let's Encrypt. `Caddyfile` (produktion) låter Caddy hämta certifikat från Let's Encrypt automatiskt.
 
 ### Starta lokalt
 
 ```bash
 cp .env.example .env
-# Sätt ADMIN_TOKEN, SERVICE_TOKEN, DOMAIN=localhost
+# Sätt ADMIN_TOKEN, SERVICE_TOKEN, DOMAIN=localhost, CADDYFILE=Caddyfile.local
 # Sätt HTTP_PORT=8081, HTTPS_PORT=8443 om port 80/443 är upptagna
 docker compose up -d --build
 ```
