@@ -1,3 +1,5 @@
+import os from 'node:os'
+import path from 'node:path'
 import { CommandRegistry, TuiShell } from '@dbwebb/tui'
 import { KeysCommands } from './commands/keys.js'
 
@@ -13,4 +15,5 @@ Hanterar API-nycklar för studenter i MVC- och ops-kursen vid BTH.
   Server : ${apiUrl}
   Kommandon: health | list | create | show | revoke | restore`,
   defaultGroup: 'keys',
+  historyFile: path.join(os.homedir(), '.dbwtui', 'api-server_history'),
 }).start()
