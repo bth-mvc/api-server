@@ -115,9 +115,15 @@ CD-pipelinen har två jobb: `build-and-push` bygger imagen och pushar den till `
 
 ### Gör GHCR-paketet publikt (engångssteg, efter första pushen)
 
-Repot är publikt och imagen innehåller inget känsligt (inga tokens eller nyckeldata bakas in i den), så paketet hålls publikt — det är dessutom ett potentiellt studieobjekt för studenterna. Då slipper droppleten autentisera sig mot GHCR för att dra imagen, och ingen token behöver skapas eller förnyas. Efter att `deploy.yml` kört en gång (så paketet finns):
+Repot är publikt och imagen innehåller inget känsligt (inga tokens eller nyckeldata bakas in i den), så paketet hålls publikt — det är dessutom ett potentiellt studieobjekt för studenterna. Då slipper droppleten autentisera sig mot GHCR för att dra imagen, och ingen token behöver skapas eller förnyas.
+
+> **Förutsättning:** organisationen måste tillåta publika paket innan det går att välja. Som organisationsägare: **`https://github.com/organizations/bth-mvc/settings/packages`** → kryssa i **"Public packages"**. Annars är alternativet "Public" gråat i steget nedan med texten *"Setting is disabled by organization administrators"* — även för en org-owner.
+
+Efter att `deploy.yml` kört en gång (så paketet finns):
 
 **GitHub → bth-mvc → Packages → `api-server` → Package settings → Change visibility → Public.**
+
+Om deploy-jobbet ändå misslyckas med `error from registry: unauthorized` vid `docker compose pull`: paketet är fortfarande privat — antingen har org-inställningen ovan inte satts, eller så har visibiliteten inte ändrats än. Kör om deploy-jobbet (**Actions → aktuell körning → Re-run failed jobs**) när paketet väl är publikt.
 
 ### Skapa SSH-nyckelpar för deploy
 
@@ -186,6 +192,9 @@ git pull && docker compose -f docker-compose.prod.yml pull && docker compose -f 
 
 # Stoppa allt
 docker compose -f docker-compose.prod.yml down
+
+# Städa bort gamla, lokalt byggda images (behövs inte längre sedan bygget flyttade till GHCR)
+docker image prune -a -f
 ```
 
 ## Säkerhetskopia av databasen
