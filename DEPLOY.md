@@ -113,20 +113,11 @@ curl https://api.example.com/health
 
 CD-pipelinen har två jobb: `build-and-push` bygger imagen och pushar den till `ghcr.io/bth-mvc/api-server` (autentiserat med det inbyggda `GITHUB_TOKEN`, ingen extra secret behövs), sedan SSH:ar `deploy` in på servern och kör `git pull && docker compose -f docker-compose.prod.yml pull && ... up -d` vid ny tagg.
 
-### Logga in droppleten mot GHCR (engångssteg)
+### Gör GHCR-paketet publikt (engångssteg, efter första pushen)
 
-Paketet `ghcr.io/bth-mvc/api-server` hålls privat, så droppleten måste autentisera sig för att kunna dra imagen.
+Repot är publikt och imagen innehåller inget känsligt (inga tokens eller nyckeldata bakas in i den), så paketet hålls publikt — det är dessutom ett potentiellt studieobjekt för studenterna. Då slipper droppleten autentisera sig mot GHCR för att dra imagen, och ingen token behöver skapas eller förnyas. Efter att `deploy.yml` kört en gång (så paketet finns):
 
-1. Skapa ett **classic Personal Access Token**: GitHub → din profil → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token. Scope: `read:packages`. Expiration: **No expiration** (annars slutar deployen fungera tyst den dag tokenet går ut — sätt en kalenderpåminnelse om ni ändå väljer en utgångstid).
-2. Logga in en gång på droppleten — inloggningen sparas i `~/.docker/config.json` och behöver inte upprepas vid varje deploy:
-
-   ```bash
-   echo '<PAT>' | docker login ghcr.io -u <github-användarnamn> --password-stdin
-   ```
-
-3. Kasta tokenet från din egen dator/terminalhistorik när det är sparat på servern.
-
-> Om ni senare hellre vill slippa hantera token helt: gör paketet publikt istället under **Packages → `api-server` → Package settings → Change visibility → Public** — då kan detta steg hoppas över helt, eftersom repot redan är publikt.
+**GitHub → bth-mvc → Packages → `api-server` → Package settings → Change visibility → Public.**
 
 ### Skapa SSH-nyckelpar för deploy
 
