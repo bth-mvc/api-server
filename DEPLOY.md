@@ -197,6 +197,19 @@ docker compose -f docker-compose.prod.yml down
 docker image prune -a -f
 ```
 
+## Övervaka resursanvändning (delad droplet)
+
+Droppleten kör fler tjänster än bara `api-server`, så kolla det här innan ni lägger till ännu en app:
+
+```bash
+free -h                       # minne — titta på "available", inte "free"
+docker stats --no-stream       # minne/CPU per container, engångs-snapshot
+df -h                          # diskutrymme
+uptime                         # load average — CPU-contention brukar märkas här före minnet
+```
+
+Varje liten Node-app har hittills legat på ~25–30 MiB i drift. Håll en marginal på minst 300–400 MiB "available" innan ni startar fler tjänster på samma droplet.
+
 ## Säkerhetskopia av databasen
 
 SQLite-filen ligger i `./data/keys.db` (Docker-volym monterad från `/opt/api-server/data/`). Kopiera den för backup:
