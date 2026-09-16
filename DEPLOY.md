@@ -1,6 +1,6 @@
 # Driftsättning
 
-API-servern körs som en Docker-container bakom Caddy (auto-TLS via Let's Encrypt) på en DigitalOcean-droplet. Caddy installeras på host-nivå och hanterar TLS och routing för alla tjänster på dropleten. Ny kod deployas automatiskt när du pushar en `v*`-tagg till GitHub.
+API-servern körs som en Docker-container bakom Caddy (auto-TLS via Let's Encrypt) på en DigitalOcean-droplet. Caddy installeras på host-nivå och hanterar TLS och routing för alla tjänster på dropleten. Ny kod deployas automatiskt när du pushar en `v*`-tagg till GitHub: GitHub Actions bygger imagen och pushar den till GitHub Container Registry (GHCR), sedan SSH:ar samma workflow in på droppleten och drar hem den färdigbyggda imagen. Droppleten bygger alltså aldrig imagen själv (sparar RAM/CPU på den lilla 1 GB-instansen).
 
 ## Förutsättningar
 
@@ -93,8 +93,11 @@ Generera tokens med: `openssl rand -hex 32`
 
 ### Starta tjänsten
 
+Imagen dras från GHCR (bygg och pusha en gång via `.github/workflows/deploy.yml` innan detta steg, se avsnitt 3–4, eller bygg och pusha manuellt en gång för hand):
+
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 Verifiera att det fungerar:
@@ -108,7 +111,15 @@ curl https://api.example.com/health
 
 ## 3. Konfigurera CD (GitHub Actions)
 
-CD-pipelinen SSH:ar in på servern och kör `git pull && docker compose -f docker-compose.prod.yml up -d --build` vid ny tagg.
+CD-pipelinen har två jobb: `build-and-push` bygger imagen och pushar den till `ghcr.io/bth-mvc/api-server` (autentiserat med det inbyggda `GITHUB_TOKEN`, ingen extra secret behövs), sedan SSH:ar `deploy` in på servern och kör `git pull && docker compose -f docker-compose.prod.yml pull && ... up -d` vid ny tagg.
+
+### Gör GHCR-paketet publikt (engångssteg, efter första pushen)
+
+Eftersom repot är publikt är det enklast att också göra containerpaketet publikt — då slipper droppleten autentisera sig mot GHCR för att dra imagen. Efter att `deploy.yml` kört en gång (så paketet finns):
+
+**GitHub → din profil/organisation → Packages → `api-server` → Package settings → Change visibility → Public.**
+
+Om paketet ska vara privat istället: kör `docker login ghcr.io -u <github-användarnamn> --password-stdin < token.txt` en gång på droppleten med ett [Personal Access Token](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry) som har `read:packages`-scope. Inloggningen sparas i `~/.docker/config.json` och behöver inte upprepas.
 
 ### Skapa SSH-nyckelpar för deploy
 
@@ -156,7 +167,7 @@ I repot: **Settings → Secrets and variables → Actions → New repository sec
 npm run release:patch   # eller :minor / :major
 ```
 
-GitHub Actions kör då `.github/workflows/deploy.yml` som SSH:ar in och startar om containrarna med den nya koden. Följ förloppet under **Actions**-fliken i GitHub.
+GitHub Actions kör då `.github/workflows/deploy.yml`: bygger imagen, pushar den till GHCR, SSH:ar sedan in och startar om containrarna med den nya imagen. Följ förloppet under **Actions**-fliken i GitHub.
 
 ---
 
@@ -172,8 +183,8 @@ docker compose -f docker-compose.prod.yml logs -f
 # Starta om
 docker compose -f docker-compose.prod.yml restart
 
-# Uppdatera manuellt (utan CD)
-git pull && docker compose -f docker-compose.prod.yml up -d --build
+# Uppdatera manuellt (utan CD) — kräver att en image redan är pushad till GHCR
+git pull && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 
 # Stoppa allt
 docker compose -f docker-compose.prod.yml down

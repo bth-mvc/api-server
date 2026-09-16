@@ -178,7 +178,7 @@ Tre miljöer:
 | `docker compose up -d` | Lokal Docker med `Caddyfile.local` (`tls internal`) |
 | `docker compose -f docker-compose.prod.yml up -d` | Produktion |
 
-I produktion installeras Caddy direkt på host-nivå och hanterar TLS (Let's Encrypt) och routing. `docker-compose.prod.yml` innehåller bara `api-server`-containern som lyssnar på `127.0.0.1:5000`. Se `DEPLOY.md` för fullständiga instruktioner.
+I produktion installeras Caddy direkt på host-nivå och hanterar TLS (Let's Encrypt) och routing. `docker-compose.prod.yml` innehåller bara `api-server`-containern som lyssnar på `127.0.0.1:5000` och drar sin image (`ghcr.io/bth-mvc/api-server`) färdigbyggd från GHCR istället för att bygga lokalt — bygget sker i `.github/workflows/deploy.yml` på GitHub Actions, inte på droppleten. Se `DEPLOY.md` för fullständiga instruktioner.
 
 Produktionsserver: `https://apikeys.dbwebb.se` (Digital Ocean, Ubuntu 24.04)
 

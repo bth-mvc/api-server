@@ -1,6 +1,6 @@
 services:
   api-server:
-    build: .
+    image: ghcr.io/bth-mvc/api-server:${IMAGE_TAG:-latest}
     ports:
       - '127.0.0.1:5000:5000'
     volumes:
