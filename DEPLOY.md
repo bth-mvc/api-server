@@ -125,43 +125,43 @@ Efter att `deploy.yml` kört en gång (så paketet finns):
 
 Om deploy-jobbet ändå misslyckas med `error from registry: unauthorized` vid `docker compose pull`: paketet är fortfarande privat — antingen har org-inställningen ovan inte satts, eller så har visibiliteten inte ändrats än. Kör om deploy-jobbet (**Actions → aktuell körning → Re-run failed jobs**) när paketet väl är publikt.
 
-### Skapa SSH-nyckelpar för deploy
+### Skapa deploy-användare och SSH-nyckelpar
 
-GitHub Actions behöver kunna SSH:a in på servern. Det kräver ett nyckelpar där den **privata** nyckeln läggs i GitHub Secrets och den **publika** nyckeln läggs i `authorized_keys` på servern.
-
-Generera nyckelparet på servern:
+GitHub Actions loggar inte in som root. Skapa en egen användare för appen, som äger `/opt/api-server` och får köra `docker` (kör som root på droppen):
 
 ```bash
-ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/deploy_key -N ""
+useradd --system --create-home --shell /bin/bash --user-group api-server
+usermod -aG docker api-server
+find /opt/api-server -path /opt/api-server/data -prune -o -exec chown api-server:api-server {} +
 ```
 
-Lägg till den publika nyckeln i `authorized_keys` så servern accepterar inloggning med den:
+`data/` lämnas med root som ägare eftersom containern skriver dit som root. Observera att gruppen `docker` i praktiken ger root-rättigheter, så nyckeln ska bara finnas som GitHub Secret.
+
+Generera ett nyckelpar (på din egen dator) med en egen nyckel för just den här appen:
 
 ```bash
-cat ~/.ssh/deploy_key.pub >> /root/.ssh/authorized_keys
+ssh-keygen -t ed25519 -C "github-actions-deploy-api-server" -f ./deploy_key -N ""
 ```
 
-Visa den privata nyckeln — kopiera hela utskriften inklusive `-----BEGIN`- och `-----END`-raderna:
+Lägg den **publika** nyckeln hos deploy-användaren. `restrict` stänger av portvidarebefordran, agent och pty:
 
 ```bash
-cat ~/.ssh/deploy_key
+install -d -m 700 -o api-server -g api-server /home/api-server/.ssh
+echo "restrict $(cat deploy_key.pub)" > /home/api-server/.ssh/authorized_keys
+chown api-server:api-server /home/api-server/.ssh/authorized_keys && chmod 600 /home/api-server/.ssh/authorized_keys
 ```
 
-Nyckelfilerna kan raderas när GitHub Secrets är satta:
-
-```bash
-rm ~/.ssh/deploy_key ~/.ssh/deploy_key.pub
-```
+Lägg den **privata** nyckeln (hela innehållet i `deploy_key`) som GitHub Secret `SSH_PRIVATE_KEY`, och radera sedan nyckelfilerna lokalt.
 
 ### Lägg till GitHub Secrets
 
-I repot: **Settings → Secrets and variables → Actions → New repository secret**
+I repot: **Settings → Secrets and variables → Actions → New repository secret**, eller med `gh secret set`.
 
 | Secret | Värde |
 |---|---|
 | `SSH_HOST` | Dropletens IP-adress eller domännamn |
-| `SSH_USER` | `root` (eller din deploy-användare) |
-| `SSH_PRIVATE_KEY` | Innehållet i `~/.ssh/deploy_key` (privata nyckeln) |
+| `SSH_USER` | `api-server` (deploy-användaren ovan, inte `root`) |
+| `SSH_PRIVATE_KEY` | Innehållet i `deploy_key` (privata nyckeln) |
 
 ---
 
