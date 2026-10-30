@@ -2,7 +2,7 @@
 
 ## Vad det här repot är
 
-En minimal API-nyckelserver för MVC-kursen och ops-kursen vid BTH. Kursteamet skapar en nyckel per student; studenten hämtar sin nyckel och använder den mot exchange-servern.
+En minimal API-nyckelserver för MVC-kursen och ops-kursen vid BTH. Kursteamet skapar en nyckel per student och lämnar ut den till studenten, som använder den mot exchange-servern.
 
 Avsiktligt enkel — lätt att driftsätta, lätt att förstå, och potentiellt ett läroexempel i ops-kursen.
 
@@ -11,7 +11,7 @@ Avsiktligt enkel — lätt att driftsätta, lätt att förstå, och potentiellt 
 Exchange-servern kräver en API-nyckel per request. Denna server hanterar livscykeln för nycklarna:
 
 ```
-Läraren skapar nyckel → student hämtar nyckel → exchange verifierar nyckel
+Läraren skapar nyckel → läraren lämnar ut nyckeln → exchange verifierar nyckel
 ```
 
 ## API
@@ -20,7 +20,7 @@ Läraren skapar nyckel → student hämtar nyckel → exchange verifierar nyckel
 
 Admin-endpoints kräver `Authorization: Bearer <ADMIN_TOKEN>` (från `.env`).
 Service-endpoint (exchange) kräver `X-Service-Token: <SERVICE_TOKEN>` (från `.env`).
-Student-endpoint är öppen men begränsad via studentens akronym.
+Det finns ingen öppen student-endpoint: `GET /keys/:acronym` togs bort i 1.3.0 eftersom den lämnade ut studenters namn till vem som helst som gissade en akronym (GDPR).
 
 ### Endpoints
 
@@ -32,7 +32,6 @@ Student-endpoint är öppen men begränsad via studentens akronym.
 | `DELETE /admin/keys/:id` | Admin | Återkalla en nyckel |
 | `PATCH /admin/keys/:id/restore` | Admin | Återaktivera en återkallad nyckel |
 | `PATCH /admin/keys/:id/ttl` | Admin | Sätt utgångsdatum för en nyckel |
-| `GET /keys/:acronym` | Öppen | Student hämtar sin nyckel (visar aldrig full nyckel) |
 | `POST /service/verify` | Service | Exchange verifierar att en nyckel är giltig |
 | `GET /health` | Öppen | Hälsostatus |
 
@@ -59,17 +58,6 @@ Student-endpoint är öppen men begränsad via studentens akronym.
 ### `PATCH /admin/keys/:id/ttl` — request
 ```json
 {
-  "expiresAt": "2027-06-30T00:00:00.000Z"
-}
-```
-
-### `GET /keys/:acronym` — response (student-vy, dold nyckel)
-```json
-{
-  "acronym": "abc",
-  "name": "Anna Bengtsson Carlsson",
-  "apiKeyHint": "mvc_a1b2****",
-  "active": true,
   "expiresAt": "2027-06-30T00:00:00.000Z"
 }
 ```
@@ -118,7 +106,6 @@ api-server/
 │   ├── config/env.ts         ← Zod-validerad env
 │   ├── routes/
 │   │   ├── admin.ts          ← POST/GET/DELETE /admin/keys
-│   │   ├── keys.ts           ← GET /keys/:acronym
 │   │   ├── service.ts        ← POST /service/verify
 │   │   └── health.ts         ← GET /health
 │   └── middleware/

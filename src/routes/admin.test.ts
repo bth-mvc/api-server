@@ -91,22 +91,3 @@ describe('DELETE + PATCH /admin/keys/:id', () => {
     expect(res.status).toBe(404)
   })
 })
-
-describe('GET /keys/:acronym', () => {
-  it('returns hint after key created', async () => {
-    await request(app)
-      .post('/admin/keys')
-      .set('Authorization', ADMIN)
-      .send({ acronym: 'xyz', name: 'Bob' })
-
-    const res = await request(app).get('/keys/xyz')
-    expect(res.status).toBe(200)
-    expect(res.body.acronym).toBe('xyz')
-    expect(res.body.apiKeyHint).toMatch(/\*\*\*\*/)
-  })
-
-  it('returns 404 for unknown acronym', async () => {
-    const res = await request(app).get('/keys/unknown')
-    expect(res.status).toBe(404)
-  })
-})

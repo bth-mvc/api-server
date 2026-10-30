@@ -2,9 +2,8 @@ openapi: '3.1.0'
 info:
   title: BTH API-nyckelserver
   description: |
-    Hanterar API-nycklar för kurser vid BTH. Tre roller:
+    Hanterar API-nycklar för kurser vid BTH. Två roller:
     - **Admin** (läraren) — skapar, listar och återkallar nycklar
-    - **Student** — hämtar sin nyckel-hint
     - **Service** (exchange eller annan server) — verifierar att en nyckel är giltig
   version: '1.0.0'
   contact:
@@ -22,8 +21,6 @@ tags:
     description: Hälsostatus
   - name: admin
     description: Lärarens administration (kräver Bearer-token)
-  - name: student
-    description: Studentens vy (öppen)
   - name: service
     description: Maskin-till-maskin (kräver X-Service-Token)
 
@@ -191,28 +188,6 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /keys/{acronym}:
-    get:
-      tags: [student]
-      summary: Hämta nyckelinfo
-      description: Returnerar en hint om nyckeln. Den fullständiga nyckeln visas aldrig här.
-      parameters:
-        - name: acronym
-          in: path
-          required: true
-          schema:
-            type: string
-          example: abc
-      responses:
-        '200':
-          description: Nyckelinfo (nyckeln dold)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KeyHint'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
   /service/verify:
     post:
       tags: [service]
@@ -339,26 +314,6 @@ components:
           type: string
           format: date-time
           example: '2026-06-29T10:00:00.000Z'
-
-    KeyHint:
-      type: object
-      properties:
-        acronym:
-          type: string
-          example: abc
-        name:
-          type: string
-          example: Anna Bengtsson Carlsson
-        apiKeyHint:
-          type: string
-          example: mvc_a1b2****
-        active:
-          type: boolean
-          example: true
-        expiresAt:
-          type: string
-          format: date-time
-          example: '2027-06-30T00:00:00.000Z'
 
     VerifyResponse:
       type: object

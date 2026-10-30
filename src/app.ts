@@ -6,7 +6,6 @@ import swaggerUi from 'swagger-ui-express'
 import { parse } from 'yaml'
 import { healthRouter } from './routes/health.js'
 import { adminRouter } from './routes/admin.js'
-import { keysRouter } from './routes/keys.js'
 import { serviceRouter } from './routes/service.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -22,7 +21,6 @@ app.get('/api-doc', (_req, res) => res.redirect(301, '/docs'))
 
 app.use(healthRouter)
 app.use('/admin', adminRouter)
-app.use('/keys', keysRouter)
 app.use('/service', serviceRouter)
 
 app.use((_req, res) => {
