@@ -17,7 +17,8 @@ export const app = express()
 
 app.use(express.json())
 
-app.use('/api-doc', swaggerUi.serve, swaggerUi.setup(spec))
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec))
+app.get('/api-doc', (_req, res) => res.redirect(301, '/docs'))
 
 app.use(healthRouter)
 app.use('/admin', adminRouter)

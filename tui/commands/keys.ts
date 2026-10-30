@@ -55,7 +55,7 @@ export class KeysCommands extends BaseCommand {
   }
 
   async apidocs(): Promise<string> {
-    return `API docs: ${this.apiUrl}/api-doc`
+    return `API docs: ${this.apiUrl}/docs`
   }
 
   async list(): Promise<string> {

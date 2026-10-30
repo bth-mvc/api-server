@@ -12,6 +12,8 @@ info:
     email: mikael.t.h.roos@gmail.com
 
 servers:
+  - url: https://apikeys.dbwebb.se
+    description: Produktion
   - url: http://localhost:5000
     description: Lokal dev
 
